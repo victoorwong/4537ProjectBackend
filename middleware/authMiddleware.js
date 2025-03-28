@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+require('dotenv').config();
 
 const authMiddleware = (req, res, next) => {
   const token = req.cookies.token;
