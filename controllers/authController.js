@@ -1,4 +1,3 @@
-// authentication logic
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -16,6 +15,7 @@ exports.register = async (req, res) => {
 
     res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
+    console.error("Registration Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -37,9 +37,13 @@ exports.login = async (req, res) => {
       { expiresIn: "1h" }
     );
 
-    res
-      .cookie("token", token, { httpOnly: true, secure: true })
-      .json({ message: "Logged in successfully", token });
+    // Set the token as an HTTP-only cookie with secure flags
+    res.cookie("token", token, {
+      httpOnly: true, // Cannot be accessed via JavaScript
+      secure: process.env.NODE_ENV === 'production', // Only send cookie over HTTPS in production
+      sameSite: 'None', // Required for cross-origin requests
+      maxAge: 3600000 // Cookie expiration time (1 hour)
+    }).json({ message: "Logged in successfully" });
   } catch (error) {
     console.error("Login Error:", error);
     res.status(500).json({ message: "Server error" });
@@ -47,5 +51,10 @@ exports.login = async (req, res) => {
 };
 
 exports.logout = (req, res) => {
-  res.clearCookie("token").json({ message: "Logged out successfully" });
+  // Clear the authentication token cookie
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production', // Only clear the cookie if it's secure
+    sameSite: 'None', // Required for cross-origin requests
+  }).json({ message: "Logged out successfully" });
 };
