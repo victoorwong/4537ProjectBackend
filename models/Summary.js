@@ -1,10 +1,13 @@
 const mongoose = require("mongoose");
-
 const SummarySchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true
+  },
+  nhlGameId: {
+    type: Number,
+    required: false 
   },
   gameDetails: {
     homeTeam: {
@@ -26,6 +29,10 @@ const SummarySchema = new mongoose.Schema({
     date: {
       type: Date,
       required: true
+    },
+    venue: {
+      type: String,
+      required: false 
     }
   },
   summary: {
