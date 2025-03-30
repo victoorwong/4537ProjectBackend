@@ -1,5 +1,5 @@
-// user related logic
 const User = require("../models/User");
+const EndPoints = require("../models/EndPoints");
 
 exports.getUserProfile = async (req, res) => {
   try {
@@ -8,20 +8,31 @@ exports.getUserProfile = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    let data;
-
     if (user.isAdmin) {
-      const allUsers = await User.find({}, "email userData apiCallsRemaining");
-      data = allUsers;
-    } else {
-      data = user.userData;
+      const allUsers = await User.find(
+        {},
+        "email userData apiCallsRemaining getRequests postRequests"
+      );
+      const endpointStats = await EndPoints.find({});
+
+      // admin
+      return res.json({
+        email: user.email,
+        isAdmin: true,
+        userData: allUsers,
+        apiCallsRemaining: user.apiCallsRemaining,
+        endpointStats,
+        message: `Welcome Admin ID: ${req.user.userId}`,
+      });
     }
 
-    res.json({
+    return res.json({
       email: user.email,
-      isAdmin: user.isAdmin,
-      userData: data,
+      isAdmin: false,
+      userData: user.userData,
       apiCallsRemaining: user.apiCallsRemaining,
+      getRequests: user.getRequests,
+      postRequests: user.postRequests,
       message: `Welcome User ID: ${req.user.userId}`,
     });
   } catch (error) {

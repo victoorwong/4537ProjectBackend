@@ -6,6 +6,8 @@ const UserSchema = new mongoose.Schema({
   isAdmin: { type: Boolean, default: false },
   userData: { type: Array, default: [] },
   apiCallsRemaining: { type: Number, default: 20 },
+  postRequests: { type: Number, default: 0 },
+  getRequests: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },
 });
 

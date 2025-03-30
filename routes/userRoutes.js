@@ -1,7 +1,7 @@
 // userRoutes.js
 const express = require("express");
 const { authMiddleware } = require("../middleware/authMiddleware");
-const { getUserProfile } = require("../controllers/userController"); // ✅ Import the controller
+const { getUserProfile } = require("../controllers/userController");
 
 const router = express.Router();
 

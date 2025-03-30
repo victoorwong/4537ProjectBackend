@@ -8,6 +8,9 @@ const path = require("path");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const summaryRoutes = require("./routes/summaryRoutes");
+const { authMiddleware } = require("./middleware/authMiddleware");
+const { trackUsage } = require("./middleware/trackUsage");
+const { logEndPoints } = require("./middleware/logEndPoints");
 
 dotenv.config();
 connectDB();
@@ -46,6 +49,7 @@ app.use(
 app.options("*", cors());
 
 app.use("/", express.static("public"));
+app.use("/api", authMiddleware, trackUsage, logEndPoints);
 
 // API Routes
 app.use("/api/auth", authRoutes);
