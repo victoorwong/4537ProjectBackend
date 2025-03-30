@@ -15,7 +15,6 @@ exports.getUserProfile = async (req, res) => {
         "email userData apiCallsRemaining getRequests postRequests"
       );
       const endpointStats = await EndPoints.find({});
-
       // admin
       return res.json({
         email: user.email,
@@ -51,7 +50,13 @@ exports.updateUserProfile = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
     
-    if (email) user.email = email;
+    if (email && email !== user.email) {
+      const emailExists = await User.findOne({ email });
+      if (emailExists) {
+        return res.status(400).json({ message: "Email already in use" });
+      }
+      user.email = email;
+    }
     
     if (password) {
       const salt = await bcrypt.genSalt(10);
@@ -60,7 +65,7 @@ exports.updateUserProfile = async (req, res) => {
     
     await user.save();
     
-    res.json({ 
+    res.json({
       message: "Profile updated successfully",
       user: {
         userId: user._id,
@@ -73,5 +78,3 @@ exports.updateUserProfile = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
-
