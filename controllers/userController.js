@@ -11,11 +11,9 @@ exports.getUserProfile = async (req, res) => {
     let data;
 
     if (user.isAdmin) {
-      // Get all users' email, userData, and apiCallsRemaining
       const allUsers = await User.find({}, "email userData apiCallsRemaining");
       data = allUsers;
     } else {
-      // Only return the logged-in user's data
       data = user.userData;
     }
 

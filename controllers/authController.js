@@ -2,6 +2,7 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+require("dotenv").config();
 
 exports.register = async (req, res) => {
   try {
@@ -37,9 +38,7 @@ exports.login = async (req, res) => {
       { expiresIn: "1h" }
     );
 
-    res
-      .cookie("token", token, { httpOnly: true, secure: true })
-      .json({ message: "Logged in successfully", token });
+    res.json({ message: "Logged in successfully", token });
   } catch (error) {
     console.error("Login Error:", error);
     res.status(500).json({ message: "Server error" });
