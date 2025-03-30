@@ -1,30 +1,15 @@
-// user routes
+// userRoutes.js
 const express = require("express");
 const { authMiddleware } = require("../middleware/authMiddleware");
-const User = require("../models/User"); // Import User model
+const { getUserProfile } = require("../controllers/userController");
 const bcrypt = require("bcryptjs"); // Import for password hashing
 const router = express.Router();
 
-// Get user profile (protected route)
-router.get("/profile", authMiddleware, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    
-    res.json({
-      userId: user._id,
-      email: user.email,
-      apiCallsRemaining: user.apiCallsRemaining,
-      isAdmin: user.isAdmin,
-      message: `Welcome User ID: ${req.user.userId}`
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
+
+// Use the controller instead of inline function
+router.get("/profile", authMiddleware, getUserProfile);
+
+
 
 // Update user profile (protected route)
 router.put("/profile", authMiddleware, async (req, res) => {
@@ -64,5 +49,4 @@ router.put("/profile", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
-
 module.exports = router;
