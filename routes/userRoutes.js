@@ -6,21 +6,22 @@ const User = require("../models/User"); // Import User model
 const router = express.Router();
 
 // Get user profile (protected route)
-router.get("/profile", authMiddleware, async (req, res) => {
+router.get("/profile", authenticateUser, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.isAdmin) {
+      const allUsers = await User.find({}, "email userData apiCallsRemaining");
+      return res.json({ isAdmin: true, allUserData: allUsers });
+    } else {
+      return res.json({
+        isAdmin: false,
+        userData: user.userData,
+        apiCallsRemaining: user.apiCallsRemaining,
+      });
     }
-    
-    res.json({
-      userId: user._id,
-      email: user.email,
-      apiCallsRemaining: user.apiCallsRemaining,
-      message: `Welcome User ID: ${req.user.userId}`
-    });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 });
