@@ -1,5 +1,5 @@
 const express = require("express");
-const { generateGameSummary, getUserSummaries } = require("../controllers/summaryController");
+const { generateGameSummary, getUserSummaries, deleteSummary, generateNhlSummary} = require("../controllers/summaryController");
 const { authMiddleware, trackApiUsage } = require("../middleware/authMiddleware");
 const router = express.Router();
 
