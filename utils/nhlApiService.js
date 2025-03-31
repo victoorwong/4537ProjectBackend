@@ -3,48 +3,57 @@ const axios = require('axios');
 
 // Get recent NHL games
 async function getRecentGames(limit = 10) {
-    try {
-        const today = new Date();
-        const formattedDate = formatDate(today);
-
-        console.log('API URL:', `https://api-web.nhle.com/v1/schedule/${formattedDate}`);
-        console.log('Today:', today);
-        console.log('Formatted date:', formattedDate);
-
+    const maxFallbackDays = 5;
+  
+    for (let i = 0; i < maxFallbackDays; i++) {
+      const date = new Date();
+      date.setDate(date.getDate() - i); 
+      const formattedDate = formatDate(date);
+  
+      console.log(`📆 Trying date: ${formattedDate}`);
+  
+      try {
         const response = await axios.get(
-            `https://api-web.nhle.com/v1/schedule/${formattedDate}`
+          `https://api-web.nhle.com/v1/schedule/${formattedDate}`
         );
-
+  
         const data = response.data;
         const games = [];
-
+  
         if (data.gameWeek && Array.isArray(data.gameWeek)) {
-            data.gameWeek.forEach(day => {
-                if (day.games && Array.isArray(day.games)) {
-                    day.games.forEach(game => {
-                        if (game.gameState === 'FINAL' || game.gameState === 'OFF') {
-                            games.push({
-                                gameId: game.id,
-                                date: game.startTimeUTC,
-                                homeTeam: game.homeTeam.name.default,
-                                awayTeam: game.awayTeam.name.default,
-                                homeScore: game.homeTeam.score || 0,
-                                awayScore: game.awayTeam.score || 0,
-                                venue: game.venue?.default || 'Unknown Venue'
-                            });
-                        }
-                    });
+          data.gameWeek.forEach(day => {
+            if (day.games && Array.isArray(day.games)) {
+              day.games.forEach(game => {
+                if (game.gameState === 'FINAL' || game.gameState === 'OFF') {
+                  games.push({
+                    gameId: game.id,
+                    date: game.startTimeUTC,
+                    homeTeam: game.homeTeam.name.default,
+                    awayTeam: game.awayTeam.name.default,
+                    homeScore: game.homeTeam.score || 0,
+                    awayScore: game.awayTeam.score || 0,
+                    venue: game.venue?.default || 'Unknown Venue'
+                  });
                 }
-            });
+              });
+            }
+          });
         }
-
-        return games.slice(0, limit);
-    } catch (error) {
-        console.error('Error fetching recent NHL games:', error);
-        throw error;
+  
+        if (games.length > 0) {
+          console.log(` Found ${games.length} games on ${formattedDate}`);
+          return games.slice(0, limit);
+        }
+  
+      } catch (error) {
+        console.error(` Error fetching games for ${formattedDate}:`, error.message);
+      }
     }
-}
-
+  
+    console.log(" No recent games found in last 5 days.");
+    return [];
+  }
+  
 async function getGameDetails(gameId) {
     try {
         const landingResponse = await axios.get(`https://api-web.nhle.com/v1/gamecenter/${gameId}/landing`);
