@@ -3,6 +3,7 @@ const nhlApiService = require('../utils/nhlApiService');
 
 // Get recent NHL games
 exports.getRecentGames = async (req, res) => {
+    console.log("Get recent games api hit")
   try {
     const limit = req.query.limit ? parseInt(req.query.limit) : 10;
     const games = await nhlApiService.getRecentGames(limit);
