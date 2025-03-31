@@ -2,7 +2,7 @@
 const nhlApiService = require('../utils/nhlApiService');
 
 // Get recent NHL games
-exports.getRecentGames = async (req, res) => {
+const getRecentGames = async (req, res) => {
     console.log("Get recent games api hit")
   try {
     const limit = req.query.limit ? parseInt(req.query.limit) : 10;
@@ -20,7 +20,7 @@ exports.getRecentGames = async (req, res) => {
 };
 
 // Get specific game details
-exports.getGameDetails = async (req, res) => {
+const getGameDetails = async (req, res) => {
   try {
     const gameId = req.params.id;
     const gameDetails = await nhlApiService.getGameDetails(gameId);
@@ -35,14 +35,7 @@ exports.getGameDetails = async (req, res) => {
   }
 };
 
-// routes/nhlRoutes.js
-const express = require("express");
-const { getRecentGames, getGameDetails } = require("../controllers/nhlController");
-const { authMiddleware } = require("../middleware/authMiddleware");
-
-const router = express.Router();
-
-router.get("/games", authMiddleware, getRecentGames);
-router.get("/game/:id", authMiddleware, getGameDetails);
-
-module.exports = router;
+module.exports = {
+    getRecentGames,
+    getGameDetails
+  };
