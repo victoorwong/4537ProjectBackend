@@ -54,6 +54,7 @@ app.use("/", express.static("public"));
 app.use("/api/auth", authRoutes);
 console.log("Registering NHL routes...");
 app.use("/api/nhl", authMiddleware, trackUsage, logEndPoints, nhlRoutes);
+app.use("/api/test-nhl", nhlRoutes);
 app.use("/api/users", authMiddleware, trackUsage, logEndPoints, userRoutes);
 app.use(
   "/api/summary",
