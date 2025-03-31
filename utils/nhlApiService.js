@@ -61,8 +61,8 @@ async function getGameDetails(gameId) {
 
         const gameData = {
             gameId: gameId,
-            homeTeam: landingData.homeTeam.name.default,
-            awayTeam: landingData.awayTeam.name.default,
+            homeTeam: landingData.homeTeam.commonName?.default || 'Home',
+            awayTeam: landingData.awayTeam.commonName?.default || 'Away',
             homeScore: landingData.homeTeam.score || 0,
             awayScore: landingData.awayTeam.score || 0,
             date: landingData.gameDate || landingData.startTimeUTC,
