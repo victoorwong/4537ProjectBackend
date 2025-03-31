@@ -4,42 +4,37 @@ const axios = require('axios');
 // Get recent NHL games
 async function getRecentGames(limit = 10) {
   try {
-    // Get current date and format it for the API
     const today = new Date();
-    const oneWeekAgo = new Date(today);
-    oneWeekAgo.setDate(today.getDate() - 7);
+    const formattedDate = formatDate(today);
     
-    const startDate = formatDate(oneWeekAgo);
-    const endDate = formatDate(today);
-    
-    // Fetch schedule for the past week
     const response = await axios.get(
-      `https://statsapi.web.nhl.com/api/v1/schedule?startDate=${startDate}&endDate=${endDate}`
+      `https://api-web.nhle.com/v1/schedule/${formattedDate}`
     );
     
     const data = response.data;
     const games = [];
     
     // Process each date
-    data.dates.forEach(date => {
-      // Process each game on that date
-      date.games.forEach(game => {
-        // Only include completed games
-        if (game.status.detailedState === 'Final') {
-          games.push({
-            gameId: game.gamePk,
-            date: game.gameDate,
-            homeTeam: game.teams.home.team.name,
-            awayTeam: game.teams.away.team.name,
-            homeScore: game.teams.home.score,
-            awayScore: game.teams.away.score,
-            venue: game.venue ? game.venue.name : 'Unknown Venue'
+    if (data.gameWeek && Array.isArray(data.gameWeek)) {
+      data.gameWeek.forEach(day => {
+        if (day.games && Array.isArray(day.games)) {
+          day.games.forEach(game => {
+            if (game.gameState === 'FINAL' || game.gameState === 'OFF') {
+              games.push({
+                gameId: game.id,
+                date: game.startTimeUTC,
+                homeTeam: game.homeTeam.name.default,
+                awayTeam: game.awayTeam.name.default,
+                homeScore: game.homeTeam.score,
+                awayScore: game.awayTeam.score,
+                venue: game.venue?.default || 'Unknown Venue'
+              });
+            }
           });
         }
       });
-    });
+    }
     
-    // Return the most recent games up to the limit
     return games.slice(0, limit);
   } catch (error) {
     console.error('Error fetching recent NHL games:', error);
@@ -47,26 +42,25 @@ async function getRecentGames(limit = 10) {
   }
 }
 
-// Get detailed game data
 async function getGameDetails(gameId) {
   try {
-    const response = await axios.get(`https://statsapi.web.nhl.com/api/v1/game/${gameId}/feed/live`);
+    const landingResponse = await axios.get(`https://api-web.nhle.com/v1/gamecenter/${gameId}/landing`);
+    const landingData = landingResponse.data;
+    const boxscoreResponse = await axios.get(`https://api-web.nhle.com/v1/gamecenter/${gameId}/boxscore`);
+    const boxscoreData = boxscoreResponse.data;
     
-    const data = response.data;
-    
-    // Extract game data
     const gameData = {
-      gameId: data.gamePk,
-      homeTeam: data.gameData.teams.home.name,
-      awayTeam: data.gameData.teams.away.name,
-      homeScore: data.liveData.linescore.teams.home.goals,
-      awayScore: data.liveData.linescore.teams.away.goals,
-      date: data.gameData.datetime.dateTime,
-      venue: data.gameData.venue.name,
-      periodScores: extractPeriodScores(data),
-      scoringPlays: extractScoringPlays(data),
-      homeShots: data.liveData.boxscore.teams.home.teamStats?.teamSkaterStats?.shots || 0,
-      awayShots: data.liveData.boxscore.teams.away.teamStats?.teamSkaterStats?.shots || 0
+      gameId: gameId,
+      homeTeam: landingData.homeTeam.name.default,
+      awayTeam: landingData.awayTeam.name.default,
+      homeScore: landingData.homeTeam.score,
+      awayScore: landingData.awayTeam.score,
+      date: landingData.gameDate,
+      venue: landingData.venue?.default || 'Unknown Venue',
+      periodScores: extractPeriodScores(landingData),
+      scoringPlays: extractScoringPlays(landingData),
+      homeShots: landingData.homeTeam.sog || 0,
+      awayShots: landingData.awayTeam.sog || 0
     };
     
     return gameData;
@@ -82,27 +76,53 @@ function formatDate(date) {
 }
 
 function extractPeriodScores(gameData) {
-  const periods = gameData.liveData.linescore.periods;
-  return periods.map(period => ({
-    period: period.ordinalNum,
-    homeScore: period.home.goals,
-    awayScore: period.away.goals
-  }));
+  const periodScores = [];
+  
+  if (gameData.summary && gameData.summary.scoring) {
+    for (const period in gameData.summary.scoring) {
+      if (Object.prototype.hasOwnProperty.call(gameData.summary.scoring, period)) {
+        periodScores.push({
+          period: getPeriodName(period),
+          homeScore: gameData.summary.scoring[period].homeScore,
+          awayScore: gameData.summary.scoring[period].awayScore
+        });
+      }
+    }
+  }
+  
+  return periodScores;
+}
+
+function getPeriodName(period) {
+  switch(period) {
+    case '1': return '1st';
+    case '2': return '2nd';
+    case '3': return '3rd';
+    case 'OT': return 'OT';
+    case 'SO': return 'SO';
+    default: return period;
+  }
 }
 
 function extractScoringPlays(gameData) {
   const scoringPlays = [];
-  const scoringIndices = gameData.liveData.plays.scoringPlays;
   
-  scoringIndices.forEach(index => {
-    const play = gameData.liveData.plays.allPlays[index];
-    scoringPlays.push({
-      period: play.about.period,
-      periodTime: play.about.periodTime,
-      team: play.team?.name || 'Unknown Team',
-      description: play.result.description
-    });
-  });
+  if (gameData.summary && gameData.summary.scoring) {
+    for (const period in gameData.summary.scoring) {
+      if (Object.prototype.hasOwnProperty.call(gameData.summary.scoring, period) && 
+          gameData.summary.scoring[period].goals) {
+        
+        gameData.summary.scoring[period].goals.forEach(goal => {
+          scoringPlays.push({
+            period: getPeriodName(period),
+            periodTime: goal.timeInPeriod,
+            team: goal.teamAbbrev.default,
+            description: `${goal.firstName.default} ${goal.lastName.default} (${goal.goalsToDate}) ${goal.shotType}`
+          });
+        });
+      }
+    }
+  }
   
   return scoringPlays;
 }
