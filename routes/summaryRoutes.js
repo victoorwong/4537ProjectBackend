@@ -5,5 +5,7 @@ const router = express.Router();
 
 router.post("/generate", authMiddleware, trackApiUsage, generateGameSummary);
 router.get("/", authMiddleware, getUserSummaries);
+router.delete("/:id", authMiddleware, deleteSummary);
+router.post("/generate-nhl", authMiddleware, generateNhlSummary);
 
 module.exports = router;

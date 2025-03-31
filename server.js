@@ -8,6 +8,7 @@ const path = require("path");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const summaryRoutes = require("./routes/summaryRoutes");
+const nhlRoutes = require("./routes/nhlRoutes");
 const { authMiddleware } = require("./middleware/authMiddleware");
 const { trackUsage } = require("./middleware/trackUsage");
 const { logEndPoints } = require("./middleware/logEndPoints");
@@ -51,7 +52,7 @@ app.options("*", cors());
 app.use("/", express.static("public"));
 
 app.use("/api/auth", authRoutes);
-
+app.use("/api/nhl", nhlRoutes);
 app.use("/api/users", authMiddleware, trackUsage, logEndPoints, userRoutes);
 app.use(
   "/api/summary",
