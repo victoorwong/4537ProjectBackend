@@ -52,7 +52,13 @@ app.options("*", cors());
 app.use("/", express.static("public"));
 
 app.use("/api/auth", authRoutes);
-console.log("Registering NHL routes...");
+// console.log("Registering NHL routes...");
+app.get("/doc/", (req, res) => {
+  res.redirect(
+    "https://app.swaggerhub.com/apis-docs/VictorWong-dd8/comp4537project/1.0.0"
+  );
+});
+
 app.use("/api/nhl", authMiddleware, trackUsage, logEndPoints, nhlRoutes);
 app.use("/api/users", authMiddleware, trackUsage, logEndPoints, userRoutes);
 app.use(
