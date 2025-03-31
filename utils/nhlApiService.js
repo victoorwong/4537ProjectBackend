@@ -25,16 +25,16 @@ async function getRecentGames(limit = 10) {
             if (day.games && Array.isArray(day.games)) {
               day.games.forEach(game => {
                 if (game.gameState === 'FINAL' || game.gameState === 'OFF') {
-                  games.push({
-                    gameId: game.id,
-                    date: game.startTimeUTC,
-                    homeTeam: game.homeTeam.name.default,
-                    awayTeam: game.awayTeam.name.default,
-                    homeScore: game.homeTeam.score || 0,
-                    awayScore: game.awayTeam.score || 0,
-                    venue: game.venue?.default || 'Unknown Venue'
-                  });
-                }
+                    games.push({
+                      gameId: game.id,
+                      date: game.startTimeUTC,
+                      homeTeam: game.homeTeam?.commonName?.default || 'Unknown',
+                      awayTeam: game.awayTeam?.commonName?.default || 'Unknown',
+                      homeScore: game.homeTeam?.score ?? 0,
+                      awayScore: game.awayTeam?.score ?? 0,
+                      venue: game.venue?.default || 'Unknown Venue'
+                    });
+                  }
               });
             }
           });
