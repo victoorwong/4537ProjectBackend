@@ -52,7 +52,7 @@ app.options("*", cors());
 app.use("/", express.static("public"));
 
 app.use("/api/auth", authRoutes);
-app.use("/api/nhl", nhlRoutes);
+app.use("/api/nhl", authMiddleware, trackUsage, logEndPoints, nhlRoutes);
 app.use("/api/users", authMiddleware, trackUsage, logEndPoints, userRoutes);
 app.use(
   "/api/summary",
