@@ -1,6 +1,10 @@
 // utils/nhlApiService.js
 const axios = require('axios');
 
+
+console.log('API URL:', `https://api-web.nhle.com/v1/schedule/${formattedDate}`);
+console.log('Today:', today);
+console.log('Formatted date:', formattedDate);
 // Get recent NHL games
 async function getRecentGames(limit = 10) {
   try {
@@ -14,7 +18,6 @@ async function getRecentGames(limit = 10) {
     const data = response.data;
     const games = [];
     
-    // Process each date
     if (data.gameWeek && Array.isArray(data.gameWeek)) {
       data.gameWeek.forEach(day => {
         if (day.games && Array.isArray(day.games)) {
@@ -25,8 +28,8 @@ async function getRecentGames(limit = 10) {
                 date: game.startTimeUTC,
                 homeTeam: game.homeTeam.name.default,
                 awayTeam: game.awayTeam.name.default,
-                homeScore: game.homeTeam.score,
-                awayScore: game.awayTeam.score,
+                homeScore: game.homeTeam.score || 0,
+                awayScore: game.awayTeam.score || 0,
                 venue: game.venue?.default || 'Unknown Venue'
               });
             }
@@ -46,16 +49,14 @@ async function getGameDetails(gameId) {
   try {
     const landingResponse = await axios.get(`https://api-web.nhle.com/v1/gamecenter/${gameId}/landing`);
     const landingData = landingResponse.data;
-    const boxscoreResponse = await axios.get(`https://api-web.nhle.com/v1/gamecenter/${gameId}/boxscore`);
-    const boxscoreData = boxscoreResponse.data;
     
     const gameData = {
       gameId: gameId,
       homeTeam: landingData.homeTeam.name.default,
       awayTeam: landingData.awayTeam.name.default,
-      homeScore: landingData.homeTeam.score,
-      awayScore: landingData.awayTeam.score,
-      date: landingData.gameDate,
+      homeScore: landingData.homeTeam.score || 0,
+      awayScore: landingData.awayTeam.score || 0,
+      date: landingData.gameDate || landingData.startTimeUTC,
       venue: landingData.venue?.default || 'Unknown Venue',
       periodScores: extractPeriodScores(landingData),
       scoringPlays: extractScoringPlays(landingData),
@@ -70,7 +71,6 @@ async function getGameDetails(gameId) {
   }
 }
 
-// Helper functions
 function formatDate(date) {
   return date.toISOString().split('T')[0];
 }
@@ -78,16 +78,24 @@ function formatDate(date) {
 function extractPeriodScores(gameData) {
   const periodScores = [];
   
-  if (gameData.summary && gameData.summary.scoring) {
+  if (gameData && gameData.summary && gameData.summary.scoring) {
     for (const period in gameData.summary.scoring) {
       if (Object.prototype.hasOwnProperty.call(gameData.summary.scoring, period)) {
         periodScores.push({
           period: getPeriodName(period),
-          homeScore: gameData.summary.scoring[period].homeScore,
-          awayScore: gameData.summary.scoring[period].awayScore
+          homeScore: gameData.summary.scoring[period].homeScore || 0,
+          awayScore: gameData.summary.scoring[period].awayScore || 0
         });
       }
     }
+  }
+  
+  if (periodScores.length === 0 && gameData) {
+    periodScores.push({
+      period: '1st',
+      homeScore: gameData.homeTeam?.score || 0,
+      awayScore: gameData.awayTeam?.score || 0
+    });
   }
   
   return periodScores;
@@ -107,17 +115,21 @@ function getPeriodName(period) {
 function extractScoringPlays(gameData) {
   const scoringPlays = [];
   
-  if (gameData.summary && gameData.summary.scoring) {
+  if (gameData && gameData.summary && gameData.summary.scoring) {
     for (const period in gameData.summary.scoring) {
       if (Object.prototype.hasOwnProperty.call(gameData.summary.scoring, period) && 
           gameData.summary.scoring[period].goals) {
         
         gameData.summary.scoring[period].goals.forEach(goal => {
+          const firstName = goal.firstName?.default || '';
+          const lastName = goal.lastName?.default || '';
+          const team = goal.teamAbbrev?.default || 'Unknown';
+          
           scoringPlays.push({
             period: getPeriodName(period),
-            periodTime: goal.timeInPeriod,
-            team: goal.teamAbbrev.default,
-            description: `${goal.firstName.default} ${goal.lastName.default} (${goal.goalsToDate}) ${goal.shotType}`
+            periodTime: goal.timeInPeriod || '00:00',
+            team: team,
+            description: `${firstName} ${lastName} (${goal.goalsToDate || 0}) ${goal.shotType || ''}`
           });
         });
       }
