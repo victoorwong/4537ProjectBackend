@@ -1,7 +1,6 @@
 const Summary = require("../models/Summary");
-const User = require("../models/User");
+const { User, ApiUsage } = require("../models/User"); 
 const axios = require("axios");
-
 
 async function generateSummary(prompt) {
     try {
@@ -37,9 +36,27 @@ exports.generateGameSummary = async (req, res) => {
             });
         }
 
-        const user = await User.findById(req.user.userId);
-        user.apiCallsRemaining -= 1;
-        await user.save();
+        // Get the API usage record for the user
+        const apiUsage = await ApiUsage.findOne({ userId: req.user.userId });
+
+        if (!apiUsage) {
+            return res.status(404).json({
+                success: false,
+                message: 'API usage record not found for this user'
+            });
+        }
+
+        // Check if the user has enough API calls remaining
+        if (apiUsage.apiCallsRemaining <= 0) {
+            return res.status(403).json({
+                success: false,
+                message: 'You have used all your free API calls'
+            });
+        }
+
+        // Decrement the remaining API calls
+        apiUsage.apiCallsRemaining -= 1;
+        await apiUsage.save();
 
         const prompt = `Tell me the score and date for a hockey game based on the following information:
 Game: ${homeTeam} vs ${awayTeam}
@@ -68,7 +85,7 @@ Hockey Game Summary:`;
             data: summary
         };
 
-        if (req.apiLimitExceeded) {
+        if (apiUsage.apiCallsRemaining <= 0) {
             response.warning = `You have exceeded the free limit of 20 API calls.`;
         }
 
@@ -137,17 +154,28 @@ exports.generateNhlSummary = async (req, res) => {
             });
         }
 
-        const user = await User.findById(req.user.userId);
-        if (!user.isAdmin && user.apiCallsRemaining <= 0) {
+        // Get the API usage record for the user
+        const apiUsage = await ApiUsage.findOne({ userId: req.user.userId });
+
+        if (!apiUsage) {
+            return res.status(404).json({
+                success: false,
+                message: 'API usage record not found for this user'
+            });
+        }
+
+        // Check if the user has enough API calls remaining
+        if (apiUsage.apiCallsRemaining <= 0) {
             return res.status(403).json({
                 success: false,
                 message: 'You have used all your free API calls'
             });
         }
 
-        if (!user.isAdmin) {
-            user.apiCallsRemaining -= 1;
-            await user.save();
+        // Decrement the remaining API calls
+        if (!req.user.isAdmin) {
+            apiUsage.apiCallsRemaining -= 1;
+            await apiUsage.save();
         }
 
         const nhlApiService = require('../utils/nhlApiService');
@@ -190,7 +218,7 @@ exports.generateNhlSummary = async (req, res) => {
             data: summary
         };
 
-        if (!user.isAdmin && user.apiCallsRemaining <= 0) {
+        if (apiUsage.apiCallsRemaining <= 0) {
             response.warning = 'You have used all your free API calls';
         }
 

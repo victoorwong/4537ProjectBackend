@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const User = require("../models/User");
+const { User, ApiUsage } = require("../models/User");
 require("dotenv").config();
 
 const authMiddleware = (req, res, next) => {
@@ -22,17 +22,23 @@ const authMiddleware = (req, res, next) => {
 const trackApiUsage = async (req, res, next) => {
   try {
     // Get user from database
-    const user = await User.findById(req.user.userId);
+    const user = await User.findById(req.user.userId).populate("apiUsage");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
+    // Access ApiUsage through the populated field
+    const apiUsage = user.apiUsage;
+    if (!apiUsage) {
+      return res.status(404).json({ message: "API usage data not found" });
+    }
+
     // Decrement remaining API calls
-    user.apiCallsRemaining = Math.max(0, user.apiCallsRemaining - 1);
-    await user.save();
+    apiUsage.apiCallsRemaining = Math.max(0, apiUsage.apiCallsRemaining - 1);
+    await apiUsage.save();
 
     // Check if user has exceeded free API calls limit
-    if (user.apiCallsRemaining <= 0) {
+    if (apiUsage.apiCallsRemaining <= 0) {
       req.apiLimitExceeded = true;
     }
 

@@ -1,10 +1,10 @@
-const User = require("../models/User");
+const { User, ApiUsage } = require("../models/User");
 const bcrypt = require("bcryptjs");
 const EndPoints = require("../models/EndPoints");
 
 exports.getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId);
+    const user = await User.findById(req.user.userId).populate("apiUsage");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -12,15 +12,16 @@ exports.getUserProfile = async (req, res) => {
     if (user.isAdmin) {
       const allUsers = await User.find(
         {},
-        "email userData apiCallsRemaining getRequests postRequests"
-      );
+        "email userData getRequests postRequests apiUsage"
+      ).populate("apiUsage"); // populate the apiUsage field for admin users
       const endpointStats = await EndPoints.find({});
-      // admin
+      
+      // admin response
       return res.json({
         email: user.email,
         isAdmin: true,
         userData: allUsers,
-        apiCallsRemaining: user.apiCallsRemaining,
+        apiCallsRemaining: user.apiUsage.apiCallsRemaining, // access apiCallsRemaining from populated apiUsage
         endpointStats,
         message: `Welcome Admin ID: ${req.user.userId}`,
       });
@@ -30,7 +31,7 @@ exports.getUserProfile = async (req, res) => {
       email: user.email,
       isAdmin: false,
       userData: user.userData,
-      apiCallsRemaining: user.apiCallsRemaining,
+      apiCallsRemaining: user.apiUsage.apiCallsRemaining, // access apiCallsRemaining from populated apiUsage
       getRequests: user.getRequests,
       postRequests: user.postRequests,
       message: `Welcome User ID: ${req.user.userId}`,
@@ -45,7 +46,7 @@ exports.updateUserProfile = async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    const user = await User.findById(req.user.userId);
+    const user = await User.findById(req.user.userId).populate("apiUsage");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -70,7 +71,7 @@ exports.updateUserProfile = async (req, res) => {
       user: {
         userId: user._id,
         email: user.email,
-        apiCallsRemaining: user.apiCallsRemaining
+        apiCallsRemaining: user.apiUsage.apiCallsRemaining // access apiCallsRemaining from populated apiUsage
       }
     });
   } catch (error) {
