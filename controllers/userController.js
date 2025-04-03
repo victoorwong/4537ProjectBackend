@@ -10,21 +10,21 @@ exports.getUserProfile = async (req, res) => {
       return res.status(404).json({ message: messages.userNotFound });
     }
 
-    let apiCallsRemaining = user.apiUsage ? user.apiUsage.apiCallsRemaining : 0;
+    // let apiCallsRemaining = user.apiUsage ? user.apiUsage.apiCallsRemaining : 0;
 
     if (user.isAdmin) {
       const allUsers = await User.find(
         {},
         "email userData getRequests postRequests apiUsage"
       ).populate("apiUsage"); // populate the apiUsage field for admin users
-      
+
       const endpointStats = await EndPoints.find({});
-      
+
       return res.json({
         email: user.email,
         isAdmin: true,
         userData: allUsers,
-        apiCallsRemaining,
+        // apiCallsRemaining,
         endpointStats,
         message: messages.welcomeAdmin(req.user.userId),
       });
@@ -34,7 +34,7 @@ exports.getUserProfile = async (req, res) => {
       email: user.email,
       isAdmin: false,
       userData: user.userData,
-      apiCallsRemaining,
+      // apiCallsRemaining,
       getRequests: user.getRequests,
       postRequests: user.postRequests,
       message: messages.welcomeUser(req.user.userId),
@@ -48,7 +48,7 @@ exports.getUserProfile = async (req, res) => {
 exports.updateUserProfile = async (req, res) => {
   try {
     const { email, password } = req.body;
-    
+
     const user = await User.findById(req.user.userId).populate("apiUsage");
     if (!user) {
       return res.status(404).json({ message: messages.userNotFound });
@@ -69,15 +69,15 @@ exports.updateUserProfile = async (req, res) => {
 
     await user.save();
 
-    let apiCallsRemaining = user.apiUsage ? user.apiUsage.apiCallsRemaining : 0;
+    // let apiCallsRemaining = user.apiUsage ? user.apiUsage.apiCallsRemaining : 0;
 
     res.json({
       message: messages.profileUpdated,
       user: {
         userId: user._id,
         email: user.email,
-        apiCallsRemaining
-      }
+        // apiCallsRemaining,
+      },
     });
   } catch (error) {
     console.error("Error in updateUserProfile:", error);
