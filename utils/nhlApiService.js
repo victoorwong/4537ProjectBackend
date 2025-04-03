@@ -10,7 +10,7 @@ async function getRecentGames(limit = 10) {
       date.setDate(date.getDate() - i); 
       const formattedDate = formatDate(date);
   
-      console.log(`📆 Trying date: ${formattedDate}`);
+      console.log(`Trying date: ${formattedDate}`);
   
       try {
         const response = await axios.get(
