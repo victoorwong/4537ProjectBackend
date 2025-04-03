@@ -1,4 +1,4 @@
-const User = require("../models/User");
+const { User } = require("../models/User");
 
 exports.trackUsage = async (req, res, next) => {
   const userId = req.user?.userId;
